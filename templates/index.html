@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f7a4d">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Panier — Grocery Scanner</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <link rel="stylesheet" href="/static/css/style.css?v={{ v }}">
+</head>
+<body>
+  <header class="top">
+    <div class="top__row">
+      <a class="brand" href="/" aria-label="Panier">
+        <span class="brand__mark" aria-hidden="true">🛒</span>
+        <span class="brand__name">Panier</span>
+      </a>
+      <nav class="tabs" role="tablist">
+        <button class="tab is-active" role="tab" data-tab="compare" data-i18n="tabCompare">Comparer</button>
+        <button class="tab" role="tab" data-tab="flyers" data-i18n="tabFlyers">Circulaires</button>
+        <button class="tab" role="tab" data-tab="list"><span data-i18n="tabList">Liste</span> <span class="tab__count" id="listCount" hidden>0</span></button>
+      </nav>
+      <div class="top__actions">
+        <button class="icon-btn lang-btn" id="langBtn" aria-label="Language">EN</button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Settings" data-i18n-aria="settings">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.5h4l.4-2.5c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2.1-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <form class="search" id="searchForm" autocomplete="off">
+      <div class="search__box">
+        <svg class="search__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6-1.4 1.4-4.6-4.6A7 7 0 1 1 10 3Zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>
+        <input id="q" name="q" type="search" enterkeyhint="search" data-i18n-ph="searchPh" placeholder="Lait 2%, beurre, bananes…">
+        <button type="button" class="scan-btn" id="scanBtn" aria-label="Scan barcode" data-i18n-aria="scan">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 7h1.5v10H7V7Zm3 0h1v10h-1V7Zm2.5 0H14v10h-1.5V7Zm3 0h1.5v10h-1.5V7Z"/></svg>
+        </button>
+      </div>
+      <button class="btn btn--primary search__go" type="submit" data-i18n="search">Chercher</button>
+    </form>
+
+    <div class="chips" id="storeChips" role="group" aria-label="Stores"></div>
+  </header>
+
+  <main>
+    <!-- Compare -->
+    <section class="panel" id="panel-compare">
+      <div class="empty" id="compareEmpty">
+        <div class="empty__art" aria-hidden="true">🥖🥛🍎</div>
+        <h1 data-i18n="heroTitle">Trouvez le meilleur prix, épicerie par épicerie.</h1>
+        <p data-i18n="heroText">Cherchez un produit ou scannez son code-barres : on compare IGA, Metro, Super C, Maxi, Tigre Géant et Walmart, classés par prix unitaire.</p>
+        <div class="quick" id="quickPicks"></div>
+      </div>
+
+      <div id="compareResults" hidden>
+        <div class="storecards" id="storeCards"></div>
+        <div class="cmp-layout">
+        <!-- left column: categories (wide screens; phones use the dropdown in the toolbar) -->
+        <aside class="catside" aria-labelledby="catSideTitle">
+          <h2 class="catside__title" id="catSideTitle" data-i18n="category">Catégorie</h2>
+          <ul class="catside__list" id="catSide"></ul>
+          <div class="brandside__head">
+            <h2 class="catside__title" data-i18n="brand">Marque</h2>
+            <button type="button" class="linklike brandside__clear" id="brandClear" data-i18n="clearBrands" hidden>Effacer</button>
+          </div>
+          <ul class="catside__list brandside__list" id="brandSide"></ul>
+          <button type="button" class="linklike brandside__more" id="brandMore" hidden></button>
+        </aside>
+        <div class="cmp-main">
+        <div class="toolbar">
+          <label class="select">
+            <span data-i18n="sortBy">Trier</span>
+            <select id="sortSel">
+              <option value="unit" data-i18n="sortUnit">Prix unitaire</option>
+              <option value="price" data-i18n="sortPrice">Prix</option>
+              <option value="store" data-i18n="sortStore">Épicerie</option>
+            </select>
+          </label>
+          <label class="select catsel-mobile">
+            <span data-i18n="category">Catégorie</span>
+            <select id="catSel"><option value="">—</option></select>
+          </label>
+          <label class="select catsel-mobile">
+            <span data-i18n="brand">Marque</span>
+            <select id="brandSel"><option value="">—</option></select>
+          </label>
+          <label class="toggle"><input type="checkbox" id="matchOnly" checked> <span data-i18n="closeOnly">Correspondances proches</span></label>
+          <label class="toggle"><input type="checkbox" id="saleOnly"> <span data-i18n="saleOnly">En solde seulement</span></label>
+          <label class="toggle"><input type="checkbox" id="glutenFree"> <span data-i18n="glutenFree">Sans gluten</span></label>
+          <label class="toggle"><input type="checkbox" id="lactoseFree"> <span data-i18n="lactoseFree">Sans lactose</span></label>
+          <span class="toolbar__count" id="resultCount"></span>
+        </div>
+        <button class="btn addq" id="addQueryBtn" type="button"></button>
+        <ul class="results" id="results"></ul>
+        <p class="note" id="hiddenNote" hidden></p>
+        </div><!-- .cmp-main -->
+        </div><!-- .cmp-layout -->
+      </div>
+    </section>
+
+    <!-- Flyers -->
+    <section class="panel" id="panel-flyers" hidden>
+      <div class="toolbar">
+        <span class="toolbar__label"><span data-i18n="flyersNear">Circulaires près de</span> <button class="linklike" id="postalLink"></button></span>
+        <label class="toggle"><input type="checkbox" id="myStoresOnly" checked> <span data-i18n="myStoresOnly">Mes épiceries seulement</span></label>
+        <span class="toolbar__count" id="flyerCount"></span>
+      </div>
+      <div class="shelf" id="flyerShelf"></div>
+
+      <div id="flyerView" hidden>
+        <div class="fview__head">
+          <div class="fview__title">
+            <span id="flyerTitle"></span>
+            <span class="fview__valid" id="flyerValid"></span>
+          </div>
+          <div class="toolbar">
+            <input class="fview__filter" id="flyerFilter" type="search" data-i18n-ph="flyerFilterPh" placeholder="Filtrer cette circulaire…">
+            <label class="select">
+              <span data-i18n="sortBy">Trier</span>
+              <select id="flyerSort">
+                <option value="page" data-i18n="sortPage">Ordre de la circulaire</option>
+                <option value="price" data-i18n="sortPrice">Prix</option>
+                <option value="discount" data-i18n="sortDiscount">Rabais %</option>
+              </select>
+            </label>
+            <span class="toolbar__count" id="flyerItemCount"></span>
+          </div>
+        </div>
+        <ul class="flyers" id="flyerItems"></ul>
+      </div>
+
+      <div id="flyerSearch" hidden>
+        <h2 class="section-title" id="flyerSearchTitle"></h2>
+        <ul class="flyers" id="flyers"></ul>
+      </div>
+    </section>
+
+    <!-- List -->
+    <section class="panel" id="panel-list" hidden>
+      <form class="needform" id="needForm" autocomplete="off">
+        <input id="needQty" type="number" min="1" value="1" inputmode="numeric" aria-label="Qty">
+        <div class="needin">
+          <input id="needIn" type="text" enterkeyhint="done" autocomplete="off" role="combobox" aria-controls="needSuggest"
+                 data-i18n-ph="needPh" placeholder="Ajouter un article… (ex. lait 2% 4L)">
+          <ul class="suggest" id="needSuggest" role="listbox" hidden></ul>
+        </div>
+        <button class="btn btn--primary" data-i18n="add">Ajouter</button>
+      </form>
+
+      <div class="basketbar">
+        <button class="btn btn--ghost" id="saveBasket" type="button" data-i18n="saveBasket">💾 Enregistrer le panier</button>
+        <button class="btn btn--ghost" id="emptyBasket" type="button" data-i18n="emptyBasket">🗑 Vider le panier</button>
+      </div>
+      <div id="savedBaskets"></div>
+
+      <div class="empty empty--small" id="listEmpty">
+        <div class="empty__art" aria-hidden="true">📝</div>
+        <p data-i18n="listEmpty">Votre liste est vide.</p>
+      </div>
+
+      <div id="planBox" hidden>
+        <ul class="needs" id="needList"></ul>
+        <div class="planopts">
+          <label class="planopt">
+            <span data-i18n="threshold">Économie minimale pour ajouter une épicerie</span>
+            <span class="money-in"><input id="thresholdIn" type="number" min="0" step="1" inputmode="decimal"> $</span>
+          </label>
+          <label class="planopt">
+            <span data-i18n="maxStores">Épiceries max.</span>
+            <select id="maxStoresSel"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </label>
+          <button class="btn btn--primary planopts__go" id="planBtn" type="button" data-i18n="plan">Trouver où faire l'épicerie</button>
+        </div>
+        <div id="planOut"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings -->
+  <dialog class="sheet" id="settingsDlg">
+    <form method="dialog" class="sheet__body">
+      <h2 data-i18n="settings">Réglages</h2>
+      <label class="field">
+        <span data-i18n="postal">Code postal (circulaires)</span>
+        <input id="postalIn" maxlength="7" autocomplete="postal-code" placeholder="H2Y 1C6">
+      </label>
+      <label class="field">
+        <span data-i18n="maxiStore">Succursale Maxi</span>
+        <select id="maxiStoreSel"><option>…</option></select>
+      </label>
+      <div class="field">
+        <span data-i18n="expiryTitle">Validité des prix par épicerie</span>
+        <div class="expiry-grid" id="expiryGrid"></div>
+        <p class="note" data-i18n="expiryNote"></p>
+      </div>
+      <div class="field">
+        <span data-i18n="crawlTitle">Catalogue complet (analyse de nuit)</span>
+        <div id="crawlStatus"></div>
+      </div>
+      <p class="note" data-i18n="settingsNote">Les prix d'IGA, Metro, Super C, Walmart et Tigre Géant sont les prix en ligne par défaut de chaque chaîne; ils peuvent varier légèrement en magasin.</p>
+      <div class="sheet__actions">
+        <button class="btn btn--primary" value="save" data-i18n="save">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Save basket -->
+  <dialog class="sheet" id="basketDlg">
+    <form method="dialog" class="sheet__body">
+      <h2 data-i18n="saveBasketTitle">Enregistrer le panier</h2>
+      <label class="field">
+        <span data-i18n="basketName">Nom du panier</span>
+        <input id="basketName" maxlength="60" autocomplete="off">
+      </label>
+      <p class="note" data-i18n="basketNote">Un panier du même nom sera mis à jour.</p>
+      <div class="sheet__actions">
+        <button class="btn" value="cancel" data-i18n="cancel">Annuler</button>
+        <button class="btn btn--primary" value="save" data-i18n="save">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Scanner -->
+  <dialog class="sheet sheet--scan" id="scanDlg">
+    <div class="sheet__body">
+      <div class="scan__head">
+        <h2 data-i18n="scanTitle">Scanner un code-barres</h2>
+        <button class="icon-btn" id="scanClose" aria-label="Close">✕</button>
+      </div>
+      <div class="scan__view">
+        <video id="scanVideo" playsinline muted></video>
+        <div class="scan__frame" aria-hidden="true"></div>
+      </div>
+      <p class="scan__status" id="scanStatus"></p>
+      <form class="scan__manual" id="scanManual">
+        <input id="scanCode" inputmode="numeric" pattern="[0-9]{6,14}" data-i18n-ph="scanManualPh" placeholder="…ou tapez le code (ex. 068200010120)">
+        <button class="btn" data-i18n="go">OK</button>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog class="pdlg" id="productDlg" aria-label="Product">
+    <button class="pdlg__close" id="productClose" type="button" aria-label="Close">✕</button>
+    <div id="productBody"></div>
+  </dialog>
+
+  <dialog class="lightbox" id="lightboxDlg">
+    <button class="lightbox__close" id="lightboxClose" aria-label="Close">✕</button>
+    <img id="lightboxImg" src="" alt="">
+  </dialog>
+
+  <script src="/static/js/app.js?v={{ v }}"></script>
+</body>
+</html>

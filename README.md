@@ -10,6 +10,24 @@ run.cmd                # same, and opens the browser
 
 Requires Python 3.10+ and `pip install -r requirements.txt` (Flask, curl_cffi, beautifulsoup4). No build step.
 
+## Quick start
+Tested on Python 3.12 (Linux).
+
+```bash
+git clone https://github.com/aturcotte628/groceries.git
+cd groceries
+python3 -m venv .venv && . .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
+
+Open <http://127.0.0.1:5055>. Set your own postal code and Maxi branch in **Settings**.
+
+What to expect:
+- The price DB (`data/prices.db`) starts empty and fills as you search. For the whole catalogue run `python crawl.py` (about 1-2 hours per store, and the first run of each store is due immediately); `python crawl.py --status` shows what is due, and `python crawl.py --force maxi --limit 2` is a quick test.
+- Maxi, Giant Tiger, Walmart and the flyers worked from a datacenter server when tested. IGA, Metro and Super C answered HTTP 403 there, so they need a home/residential connection (or a relay, see `PANIER_RELAY` in `sources/base.py`).
+- It uses the stores' unofficial endpoints, which can change without notice, and the stores' terms generally forbid automated collection. Keep it to personal use at a slow pace.
+
 ## Features
 
 - **Compare**: each store is queried in parallel and shown as soon as it answers. Store cards show each chain's best unit price, and the overall cheapest is flagged. Filters: close matches only, on sale only. Sorting: unit price, price, or store.
